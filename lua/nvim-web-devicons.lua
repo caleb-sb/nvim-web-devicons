@@ -1575,7 +1575,7 @@ local global_opts = {
 
 local function get_highlight_name(data)
   if not global_opts.color_icons then
-  	data = default_icon
+    data = default_icon
   end
 
   return data.name and "DevIcon" .. data.name
@@ -1583,7 +1583,7 @@ end
 
 local function set_up_highlight(icon_data)
   if not global_opts.color_icons then
-  	icon_data = default_icon
+    icon_data = default_icon
   end
 
   local hl_group = get_highlight_name(icon_data)
@@ -1628,7 +1628,7 @@ end
 
 local function get_highlight_foreground(icon_data)
   if not global_opts.color_icons then
-  	icon_data = default_icon
+    icon_data = default_icon
   end
 
   return string.format("#%06x", vim.api.nvim_get_hl_by_name(get_highlight_name(icon_data), true).foreground)
@@ -1636,7 +1636,7 @@ end
 
 local function get_highlight_ctermfg(icon_data)
   if not global_opts.color_icons then
-  	icon_data = default_icon
+    icon_data = default_icon
   end
 
   local _, _, ctermfg = string.find(vim.fn.execute("highlight " .. get_highlight_name(icon_data)), "ctermfg=(%d+)")
@@ -1678,6 +1678,17 @@ local function setup(opts)
   vim.cmd([[augroup END]])
 end
 
+-- Plugins (telescope, lualine) that use web-devicons dont do this
+-- Centralising it saves some trouble.
+-- The name is passed in but is treated as the extension to ID the icon
+local function get_icon_recursively(ext)
+  if (not icons[ext]) then
+    if (string.match(ext, "%.(.*)")) then
+      return get_icon_recursively(string.match(ext, "%.(.*)"))
+    else return nil end
+  else return icons[ext] end
+end
+
 local function get_icon(name, ext, opts)
   ext = ext or name:match("^.*%.(.*)$") or ""
   if not loaded then
@@ -1685,7 +1696,7 @@ local function get_icon(name, ext, opts)
   end
 
   local has_default = vim.F.if_nil(opts and opts.default, global_opts.default)
-  local icon_data = icons[name] or icons[ext] or (has_default and default_icon)
+  local icon_data = icons[name] or get_icon_recursively(name) or (has_default and default_icon)
 
   if icon_data then
     return icon_data.icon, get_highlight_name(icon_data)
@@ -1749,7 +1760,7 @@ end
 local function set_icon(user_icons)
   icons = vim.tbl_extend("force", icons, user_icons or {})
   if not global_opts.color_icons then
-  	return
+    return
   end
 
   for _, icon_data in pairs(user_icons) do
@@ -1785,3 +1796,4 @@ return {
   end,
   set_up_highlights = set_up_highlights,
 }
+
